@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration status="error" monitrInterval="30">
+
+    <Appenders>
+        <Console name="Console" target="SYSTEM_OUT">
+            <!--控制台只输出level以上级别的信息（onMatch），其他的信息直接拒绝（onMismatch）-->
+            <ThresholdFilter level="trace" onMatch="ACCEPT" onMismatch="DENY"/>
+            <!--日志格式输出，（yyyy-MM-dd HH:mm:ss.SSS）年月日时分秒毫秒，（%-5level）错误级别占位符，向左对其5个字符，（%msg）日志信息-->
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%l] [%t] [Function：%M] [Line：%L] [%-5level] %logger{36} - %msg%xEx%n"/>
+        </Console>
+        <!--文件会打印出信息，这个log文件在每次运行都会清空之前log信息，并且重新写入，由append属性决定，“false”为每次覆盖，“true”为每次继续追加写入-->
+        <File name="log" fileName="logs/test.log" append="false">
+            <!--日志格式输出，（yyyy-MM-dd HH:mm:ss.SSS）年月日时分秒毫秒，（%-5level）错误级别占位符，向左对其5个字符，（%msg）日志信息-->
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%l] [%t] [Function：%M] [Line：%L] [%-5level] %logger{36} - %msg%xEx%n"/>
+        </File>
+        <!--这个会打印所有信息，每次文件大小超过定义的size，则这个size大小的日志会自动按年份 月份建立的文件夹下面并进行压缩，作为存档-->
+        <RollingFile name="RollingFile" filename="logs/rolling.log"
+                     filePattern="logs/$${date:yyyy-MM-dd}/rolling-%d{yyyy-MM-dd} - %i.log.gz">
+            <PatternLayout pattern="%d{yyyy-MM-dd HH:mm:ss.SSS} [%l] [%t] [Function：%M] [Line：%L] %-5level %class(36) -%msg%xEx%n"/>
+            <SizeBasedTriggeringPolicy size="50MB"/>
+            <!--DefaultRolloverStrategy (max)如果不做设置，则默认一个文件夹下有7个文件夹，-->
+            <DefaultRolloverStrategy max="20"/>
+
+        </RollingFile>
+    </Appenders>
+    <!--定义logger，只有定义logger，并引入appender，appender才会生效-->
+    <Loggers>
+
+        <!--建立一个默认的root的logger-->
+        <Root level="trace">
+
+            <!--文件logger，属性由“RollingFile”定义-->
+            <appender-ref ref="RollingFile"/>
+
+            <!--控制台logger，属性由“Console”定义-->
+            <appender-ref ref="Console"/>
+
+            <!--单个文件logger，属性由“log”定义-->
+            <appender-ref ref="log"/>
+        </Root>
+    </Loggers>
+</Configuration>

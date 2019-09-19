@@ -1,0 +1,11 @@
+<!DOCTYPE suite SYSTEM "http://testng.org/testng-1.0.dtd" >
+<suite name="NewQMTTest">
+    <!--<listeners>-->
+        <!--<listener class-name="Category.CategoryTest"/>-->
+        <!--<listener class-name="GoodsTest.GoodsApiTest"/>-->
+    <!--</listeners>-->
+    <test name="ApiTest">
+        <classes>
+        </classes>
+    </test>
+</suite>
