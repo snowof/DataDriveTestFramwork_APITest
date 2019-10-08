@@ -1,5 +1,6 @@
 package SendRequest;
 
+import ProcessExcel.ProcessDataForExcel;
 import ProcessExcel.ReadExcel;
 import RequestMethod.RequestMethod;
 import Tools.TestUtil;
@@ -13,7 +14,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 
-public class Request {
+public class runRequest {
     private String testCaseNo;
     private String apiUrl;
     private String apiAddress;
@@ -22,9 +23,9 @@ public class Request {
     private String requestBody;
     private String Response;
     private String expectedStatueCode;
-    private String expected;
-    private String assertMethodForExcel;
-    private String actual;
+    public String expected;
+    public String assertMethodForExcel;
+    public String actual;
     private String environmentalVariable;
     private String globalVariable;
     private String setupNo;
@@ -41,6 +42,8 @@ public class Request {
     public static void main(String[] args) {
         ArrayList allExcelList;
         ArrayList columnList;
+        runRequest runRequest1 = new runRequest();
+        runRequest1.getDataForReadExcel();
         try {
 
             String[] expectedArray = null;
@@ -78,50 +81,24 @@ public class Request {
                     environmentalVariableArray = environmentalVariable.split("\n");
                     globalVariableArray = globalVariable.split("\n");
                 }*/
-                for (String text : requestHeaderKayAndValue) {
-                    hashMap.put(text, text);
-                }
                 if (requestMethod.equals("GET") || requestMethod.equals("get")) {
-                    String requestAddress = apiUrl + apiAddress;
-                    closeableHttpResponse = request.get(requestAddress);
-                    int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                    String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-                    Assert.assertEquals(statueCode, expectedStatueCode);
-
-                    JSONObject responseJson = JSON.parseObject(responseString);
-//                    String JsonDetails = TestUtil.getValueByJPath(responseJson, );
-
-
+                    JSONObject responseJson = runRequest1.runRequestForGet();
+                    runRequest1.verify(responseJson);
                     for (int y = 0; y < expectedArray.length; i++) {
                         assertMethod.assertMethodSelect(assertMethodForExcel, expectedArray[y], actualArray[y]);
                     }
                 } else if (requestMethod.equals("POST") || requestMethod.equals("post")) {
-                    closeableHttpResponse = request.post(apiUrl + apiAddress, requestBody, hashMap);
-                    int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                    String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-                    Assert.assertEquals(statueCode, expectedStatueCode);
-
-
+                    JSONObject responseJson = runRequest1.runRequestForPost();
+                    runRequest1.verify(responseJson);
                 } else if (requestMethod.equals("PUT") || requestMethod.equals("put")) {
-                    closeableHttpResponse = request.put(apiUrl + apiAddress, requestBody, hashMap);
-                    int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                    String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-                    Assert.assertEquals(statueCode, expectedStatueCode);
-
-
+                    JSONObject responseJson = runRequest1.runRequestForPut();
+                    runRequest1.verify(responseJson);
                 } else if (requestMethod.equals("Delete") || requestMethod.equals("delete")) {
-                    closeableHttpResponse = request.delete(apiUrl + apiAddress, hashMap);
-                    int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                    String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-
-                    Assert.assertEquals(statueCode, expectedStatueCode);
-
-
+                    JSONObject responseJson = runRequest1.runRequestForDelete();
+                    runRequest1.verify(responseJson);
                 } else if (requestMethod.equals("Patch") || requestMethod.equals("patch")) {
-                    closeableHttpResponse = request.patch(apiUrl + apiAddress, requestBody, hashMap);
-                    int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
-                    String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-                    Assert.assertEquals(statueCode, expectedStatueCode);
+                    JSONObject responseJson = runRequest1.runRequestForPatch();
+                    runRequest1.verify(responseJson);
                 }
             }
         } catch (IOException e) {
@@ -154,35 +131,84 @@ public class Request {
         }
     }
 
-    public void runRequestForGet() throws IOException {
+    public HashMap<String, String> processActualForExcel() {
+        HashMap<String, String> hashMap = new HashMap<String, String>();
+        String[] splitActualMethod = null;
+        if (actual.contains(";")) {
+            splitActualMethod = actual.split(";");
+        }
+        for (int i = 0; i < splitActualMethod.length; i++) {
+            String processActualLine = splitActualMethod[i];
+            if (processActualLine.contains("array")) {
+                String splitActualArray = processActualLine.replace("array(", "").replace(")", "");
+                hashMap.put("array", splitActualArray);
+            } else if (processActualLine.contains("text")) {
+                String splitText = processActualLine.replace("text(", "").replace(")", "");
+                hashMap.put("text", splitText);
+            } else if (processActualLine.contains("pattern")) {
+                String splitPattern = processActualLine.replace("pattern(", "").replace(")", "");
+                hashMap.put("pattern", splitPattern);
+            }
+        }
+        return hashMap;
+    }
+
+    public String[] processExpectedForExcel() {
+        HashMap<String, String> hashMap = new HashMap<String, String>();
+        String[] splitExpectedMethod = null;
+        if (expected.contains(",")) {
+            splitExpectedMethod = expected.split(",");
+        }
+        return splitExpectedMethod;
+    }
+
+    public String[] processAssertForExcel() {
+        HashMap<String, String> hashMap = new HashMap<String, String>();
+        String[] splitAssertMethod = null;
+        if (assertMethodForExcel.contains(",")) {
+            splitAssertMethod = assertMethodForExcel.split(",");
+        }
+        return splitAssertMethod;
+    }
+
+
+    public JSONObject runRequestForGet() throws IOException {
         String requestAddress = apiUrl + apiAddress;
         closeableHttpResponse = request.get(requestAddress);
         int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
         String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
-        Assert.assertEquals(statueCode, expectedStatueCode);
         JSONObject responseJson = JSON.parseObject(responseString);
+        Assert.assertEquals(statueCode, expectedStatueCode);
+        return responseJson;
     }
 
-    public void runRequestForPost() throws IOException {
+
+    public JSONObject runRequestForPost() throws IOException {
         closeableHttpResponse = request.post(apiUrl + apiAddress, requestBody, hashMap);
         int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
         String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
+        JSONObject responseJson = JSON.parseObject(responseString);
         Assert.assertEquals(statueCode, expectedStatueCode);
+        return responseJson;
     }
 
-    public void runRequestForPut() throws IOException {
+
+    public JSONObject runRequestForPut() throws IOException {
         closeableHttpResponse = request.put(apiUrl + apiAddress, requestBody, hashMap);
         int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
         String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
+        JSONObject responseJson = JSON.parseObject(responseString);
         Assert.assertEquals(statueCode, expectedStatueCode);
+        return responseJson;
     }
 
-    public void runRequestForDelete() throws IOException {
+    public JSONObject runRequestForDelete() throws IOException {
         closeableHttpResponse = request.delete(apiUrl + apiAddress, hashMap);
         int statueCode = closeableHttpResponse.getStatusLine().getStatusCode();
         String responseString = EntityUtils.toString(closeableHttpResponse.getEntity());
         JSONObject responseJson = JSON.parseObject(responseString);
         Assert.assertEquals(statueCode, expectedStatueCode);
+        return responseJson;
     }
 
     public JSONObject runRequestForPatch() throws IOException {
@@ -192,6 +218,48 @@ public class Request {
         JSONObject responseJson = JSON.parseObject(responseString);
         Assert.assertEquals(statueCode, expectedStatueCode);
         return responseJson;
+    }
+
+    public void verify(JSONObject responseJson) {
+        ProcessDataForExcel processDataForExcel = new ProcessDataForExcel();
+        HashMap<String, String> hashMap = new HashMap<String, String>();
+        runRequest runRequest = new runRequest();
+        String[] actualArray;
+        String[] textArray;
+        String[] patternArray;
+        String responseString;
+//        hashMap = runRequest.processActualForExcel();
+        hashMap = processDataForExcel.processActualForExcel();
+
+//        String actualForResponseJson = TestUtil.getValueByJPath(responseJson, actual);
+        if (hashMap.containsKey("array")) {
+            String arrayActual = hashMap.get("array");
+            if (arrayActual.contains(",")) {
+                actualArray = arrayActual.split(",");
+                for (String text : actualArray) {
+                    responseString = TestUtil.getValueByJPath(responseJson, text);
+                }
+            } else {
+                responseString = TestUtil.getValueByJPath(responseJson, arrayActual);
+            }
+        } else if (hashMap.containsKey("text")) {
+            String arrayText = hashMap.get("text");
+            if (arrayText.contains(",")) {
+                textArray = arrayText.split(",");
+                for (String text : textArray) {
+                    responseString = TestUtil.getValueByJPath(responseJson, text);
+                }
+            } else {
+                responseString = TestUtil.getValueByJPath(responseJson, arrayText);
+            }
+        } else if (hashMap.containsKey("pattern")) {
+            String arrayPattern = hashMap.get("pattern");
+            if (arrayPattern.contains(",")) {
+                patternArray = arrayPattern.split(",");
+            }
+        } else {
+            System.out.println("没找到Array、Text、Pattern");
+        }
     }
 
 
